@@ -1,0 +1,674 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calculateur de marge · Tableur dynamique</title>
+    <!-- Flavicon (à placer dans le même dossier) -->
+    <link rel="icon" href="Flavicon.png" type="image/png">
+    <link rel="apple-touch-icon" href="Flavicon.png">
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background: linear-gradient(145deg, #0b0d1a 0%, #1a1e30 100%);
+            font-family: 'Arial', 'Segoe UI', sans-serif;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0;
+            padding: 16px;
+        }
+
+        .calculator {
+            max-width: 700px;
+            width: 100%;
+            background: rgba(10, 14, 23, 0.8);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 40px;
+            padding: 32px 28px;
+            box-shadow: 0 25px 50px -8px rgba(0,0,0,0.6), 0 0 0 1px rgba(120, 200, 255, 0.2) inset;
+        }
+
+        h1 {
+            color: #f0f3fa;
+            font-weight: 500;
+            font-size: 1.9rem;
+            letter-spacing: -0.5px;
+            margin-bottom: 6px;
+            text-shadow: 0 2px 5px rgba(0,160,255,0.3);
+        }
+
+        .sub {
+            color: #9aa4bf;
+            font-size: 0.95rem;
+            margin-bottom: 28px;
+            border-left: 3px solid #3b82f6;
+            padding-left: 16px;
+        }
+
+        .field-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 22px;
+            margin-bottom: 32px;
+        }
+
+        .field-row {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .field-row label {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: #cdd9ff;
+            font-weight: 500;
+            font-size: 1.1rem;
+            letter-spacing: 0.3px;
+        }
+
+        .field-row label i {
+            font-style: normal;
+            color: #5f7cbf;
+            font-size: 1.3rem;
+        }
+
+        .input-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        .input-wrapper input {
+            width: 100%;
+            background: #ffffff;
+            border: none;
+            border-radius: 24px;
+            padding: 16px 24px;
+            font-size: 1.4rem;
+            font-weight: 500;
+            color: #0f172a;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.5), 0 0 0 2px rgba(255,255,255,0.05) inset;
+            transition: all 0.15s ease;
+            font-family: 'Arial', monospace;
+        }
+
+        .input-wrapper input:focus {
+            outline: none;
+            box-shadow: 0 0 0 3px #3b82f6, 0 8px 20px rgba(0, 0, 0, 0.6);
+            transform: scale(1.01);
+        }
+
+        .input-wrapper .unit {
+            position: absolute;
+            right: 24px;
+            font-size: 1.4rem;
+            font-weight: 600;
+            color: #475569;
+            pointer-events: none;
+        }
+
+        /* glow subtil pour les champs calculés (tous le sont) */
+        .input-wrapper input:not(:placeholder-shown) {
+            box-shadow: 0 0 12px rgba(74, 222, 128, 0.3), 0 8px 20px rgba(0, 0, 0, 0.5);
+        }
+
+        /* coloration dynamique pour le bénéfice / déficit */
+        .benefice-positive {
+            background: #ffffff !important;
+            color: #0f172a !important;
+            box-shadow: 0 0 15px #4ade80, 0 8px 20px rgba(0,0,0,0.5) !important;
+        }
+        .benefice-negative {
+            background: #ffffff !important;
+            color: #0f172a !important;
+            box-shadow: 0 0 15px #f87171, 0 8px 20px rgba(0,0,0,0.5) !important;
+        }
+
+        .label-badge {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .icon-pack {
+            font-size: 1.6rem;
+            line-height: 1;
+            filter: drop-shadow(0 0 6px currentColor);
+            margin-left: auto;
+        }
+
+        .actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 18px;
+            justify-content: center;
+            margin: 36px 0 16px;
+        }
+
+        button {
+            background: #2a2f47;
+            border: none;
+            border-radius: 60px;
+            padding: 16px 36px;
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: #eef3ff;
+            cursor: pointer;
+            box-shadow: 0 6px 0 #0f1322, 0 12px 25px -5px black;
+            transition: all 0.08s linear;
+            flex: 0 1 auto;
+            min-width: 200px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        button:active {
+            transform: translateY(6px);
+            box-shadow: 0 2px 0 #0f1322, 0 12px 25px -5px black;
+        }
+
+        .btn-calc {
+            background: #1e3a5f;
+            box-shadow: 0 6px 0 #0e2639, 0 12px 25px -5px black;
+        }
+
+        .btn-reset {
+            background: #5f2e3e;
+            box-shadow: 0 6px 0 #3a1c26, 0 12px 25px -5px black;
+        }
+
+        .status-zone {
+            margin-top: 20px;
+            text-align: center;
+            font-size: 1.5rem;
+            background: rgba(0, 0, 0, 0.4);
+            border-radius: 60px;
+            padding: 16px 20px;
+            border: 1px solid #334155;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 18px;
+            flex-wrap: wrap;
+        }
+
+        .big-icon {
+            font-size: 2.2rem;
+            filter: drop-shadow(0 0 8px gold);
+        }
+
+        .footer-note {
+            color: #6d7a9e;
+            font-size: 0.85rem;
+            text-align: center;
+            margin-top: 24px;
+            border-top: 1px dashed #2f3a5c;
+            padding-top: 16px;
+        }
+    </style>
+</head>
+<body>
+<div class="calculator">
+    <h1>📊 Marge · Coef · Bénéfice</h1>
+    <div class="sub">⚡ Modifiez n’importe quelle case, tout se met à jour instantanément ⚡</div>
+
+    <div class="field-grid">
+        <!-- Prix d'achat net -->
+        <div class="field-row">
+            <label><i>🛒</i> Prix d’achat net</label>
+            <div class="input-wrapper">
+                <input type="number" id="prixAchat" step="any" placeholder="0.00" autocomplete="off">
+                <span class="unit">€</span>
+            </div>
+        </div>
+
+        <!-- Taux applicable % -->
+        <div class="field-row">
+            <label><i>📈</i> Taux %</label>
+            <div class="input-wrapper">
+                <input type="number" id="taux" step="any" placeholder="0.0" autocomplete="off">
+                <span class="unit">%</span>
+            </div>
+        </div>
+
+        <!-- Coefficient -->
+        <div class="field-row">
+            <label><i>✖️</i> Coefficient</label>
+            <div class="input-wrapper">
+                <input type="number" id="coef" step="any" placeholder="1.0" autocomplete="off">
+                <span class="unit"></span>
+            </div>
+        </div>
+
+        <!-- Prix de vente -->
+        <div class="field-row">
+            <label><i>🏷️</i> Prix de vente</label>
+            <div class="input-wrapper">
+                <input type="number" id="prixVente" step="any" placeholder="0.00" autocomplete="off">
+                <span class="unit">€</span>
+            </div>
+        </div>
+
+        <!-- Bénéfice / Déficit (label changé dynamiquement) -->
+        <div class="field-row" id="beneficeRow">
+            <label id="beneficeLabel">
+                <span class="label-badge">
+                    <span id="beneficeIconStatic">💰</span>
+                    <span id="beneficeText">Bénéfice net</span>
+                </span>
+                <span id="dynamicIcons" class="icon-pack">🤑🤩🤌</span>
+            </label>
+            <div class="input-wrapper">
+                <input type="number" id="benefice" step="any" placeholder="0.00" autocomplete="off">
+                <span class="unit">€</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="actions">
+        <button class="btn-calc" id="calculerBtn">🔁 Calculer</button>
+        <button class="btn-reset" id="resetBtn">🧹 Remise à zéro</button>
+    </div>
+
+    <!-- Zone d'icônes et statut (renforcé) -->
+    <div class="status-zone" id="statusZone">
+        <span class="big-icon" id="mainIconLeft">🧮</span>
+        <span id="statusMessage">Modifiez les valeurs</span>
+        <span class="big-icon" id="mainIconRight">✨</span>
+    </div>
+
+    <div class="footer-note">
+        ⚡ Les données sont automatiquement sauvegardées · Icône dynamique selon bénéfice/déficit
+    </div>
+</div>
+
+<script>
+    (function() {
+        // --- DOM elements ---
+        const inputPA = document.getElementById('prixAchat');
+        const inputTaux = document.getElementById('taux');
+        const inputCoef = document.getElementById('coef');
+        const inputPV = document.getElementById('prixVente');
+        const inputBen = document.getElementById('benefice');
+
+        // elements dynamiques pour label / icônes
+        const beneficeLabelSpan = document.getElementById('beneficeText');
+        const dynamicIconsSpan = document.getElementById('dynamicIcons');
+        const beneficeIconStatic = document.getElementById('beneficeIconStatic');
+        const statusZone = document.getElementById('statusZone');
+        const mainIconLeft = document.getElementById('mainIconLeft');
+        const mainIconRight = document.getElementById('mainIconRight');
+        const statusMessage = document.getElementById('statusMessage');
+
+        // variable pour éviter les boucles de mise à jour
+        let updating = false;
+
+        // --- Lecture localStorage au chargement ---
+        function loadFromStorage() {
+            try {
+                const saved = localStorage.getItem('marginCalculator');
+                if (saved) {
+                    const data = JSON.parse(saved);
+                    if (data.pa !== undefined) inputPA.value = data.pa;
+                    if (data.taux !== undefined) inputTaux.value = data.taux;
+                    if (data.coef !== undefined) inputCoef.value = data.coef;
+                    if (data.pv !== undefined) inputPV.value = data.pv;
+                    if (data.ben !== undefined) inputBen.value = data.ben;
+                }
+            } catch (e) {
+                console.warn("Erreur lecture localStorage", e);
+            }
+        }
+
+        // --- Sauvegarde dans localStorage ---
+        function saveToStorage() {
+            const data = {
+                pa: inputPA.value,
+                taux: inputTaux.value,
+                coef: inputCoef.value,
+                pv: inputPV.value,
+                ben: inputBen.value
+            };
+            localStorage.setItem('marginCalculator', JSON.stringify(data));
+        }
+
+        // --- Fonctions de formatage / affichage ---
+        function formatNumber(value) {
+            if (isNaN(value) || value === null || value === '') return '';
+            // Garder jusqu'à 3 décimales pour les coefficients / taux, mais pour les euros on préfère 2
+            return parseFloat(value.toFixed(10)); // on laisse le JS gérer l'affichage, on évite les arrondis agressifs
+        }
+
+        // Met à jour le style et le libellé du bénéfice en fonction de la valeur
+        function updateBeneficeUI(benValue) {
+            const num = parseFloat(benValue);
+            const inputBenElement = inputBen;
+
+            if (!isNaN(num)) {
+                if (num > 0) {
+                    // bénéfice
+                    beneficeLabelSpan.innerText = 'Bénéfice net';
+                    dynamicIconsSpan.innerHTML = '🤑🤩🤌';
+                    beneficeIconStatic.innerText = '💰';
+                    inputBenElement.classList.add('benefice-positive');
+                    inputBenElement.classList.remove('benefice-negative');
+                    mainIconLeft.innerText = '🤑';
+                    mainIconRight.innerText = '🤌';
+                    statusMessage.innerText = 'Bénéfice 🤩';
+                } else if (num < 0) {
+                    // déficit
+                    beneficeLabelSpan.innerText = 'Déficit net';
+                    dynamicIconsSpan.innerHTML = '👀😱😡😭';
+                    beneficeIconStatic.innerText = '💸';
+                    inputBenElement.classList.add('benefice-negative');
+                    inputBenElement.classList.remove('benefice-positive');
+                    mainIconLeft.innerText = '😭';
+                    mainIconRight.innerText = '👀';
+                    statusMessage.innerText = 'Déficit 😱';
+                } else { // zero
+                    beneficeLabelSpan.innerText = 'Bénéfice net (zéro)';
+                    dynamicIconsSpan.innerHTML = '🤨🧐';
+                    beneficeIconStatic.innerText = '⚖️';
+                    inputBenElement.classList.remove('benefice-positive', 'benefice-negative');
+                    mainIconLeft.innerText = '🤨';
+                    mainIconRight.innerText = '🧐';
+                    statusMessage.innerText = 'Équilibre (zéro)';
+                }
+            } else {
+                // pas de valeur
+                beneficeLabelSpan.innerText = 'Bénéfice net';
+                dynamicIconsSpan.innerHTML = '🤑🤩🤌';
+                beneficeIconStatic.innerText = '💰';
+                inputBenElement.classList.remove('benefice-positive', 'benefice-negative');
+                mainIconLeft.innerText = '🧮';
+                mainIconRight.innerText = '✨';
+                statusMessage.innerText = 'Entrez des valeurs';
+            }
+        }
+
+        // --- Cœur des calculs synchronisés ---
+        function updateFromField(changedId) {
+            if (updating) return;
+            updating = true;
+
+            // Récupération des valeurs (parseFloat, vide = NaN)
+            const pa = parseFloat(inputPA.value);
+            const taux = parseFloat(inputTaux.value);
+            const coef = parseFloat(inputCoef.value);
+            const pv = parseFloat(inputPV.value);
+            const ben = parseFloat(inputBen.value);
+
+            const isPaValid = !isNaN(pa);
+            const isTauxValid = !isNaN(taux);
+            const isCoefValid = !isNaN(coef) && coef !== 0; // coef 0 interdit (div par zéro)
+            const isPvValid = !isNaN(pv);
+            const isBenValid = !isNaN(ben);
+
+            // Selon le champ modifié, on applique une règle de recalcul
+            try {
+                if (changedId === 'prixAchat') {
+                    if (isPaValid) {
+                        if (isPvValid) {
+                            // PA et PV définis -> calculer BEN, COEF, TAUX
+                            const newBen = pv - pa;
+                            inputBen.value = formatNumber(newBen);
+                            if (pa !== 0) {
+                                const newCoef = pv / pa;
+                                inputCoef.value = formatNumber(newCoef);
+                                inputTaux.value = formatNumber((newCoef - 1) * 100);
+                            } else {
+                                inputCoef.value = '';
+                                inputTaux.value = '';
+                            }
+                        } else if (isCoefValid && pa !== 0) {
+                            // PA + COEF
+                            const newPv = pa * coef;
+                            inputPV.value = formatNumber(newPv);
+                            const newBen = newPv - pa;
+                            inputBen.value = formatNumber(newBen);
+                            inputTaux.value = formatNumber((coef - 1) * 100);
+                        } else if (isTauxValid && pa !== 0) {
+                            // PA + TAUX
+                            const newCoef = 1 + (taux / 100);
+                            const newPv = pa * newCoef;
+                            inputPV.value = formatNumber(newPv);
+                            inputBen.value = formatNumber(newPv - pa);
+                            inputCoef.value = formatNumber(newCoef);
+                        } else if (isBenValid) {
+                            // PA + BENEFICE
+                            const newPv = pa + ben;
+                            inputPV.value = formatNumber(newPv);
+                            if (pa !== 0) {
+                                const newCoef = newPv / pa;
+                                inputCoef.value = formatNumber(newCoef);
+                                inputTaux.value = formatNumber((newCoef - 1) * 100);
+                            } else {
+                                inputCoef.value = '';
+                                inputTaux.value = '';
+                            }
+                        }
+                        // Si rien d'autre, on laisse les autres champs inchangés
+                    }
+                }
+                else if (changedId === 'prixVente') {
+                    if (isPvValid) {
+                        if (isPaValid) {
+                            // PV + PA
+                            const newBen = pv - pa;
+                            inputBen.value = formatNumber(newBen);
+                            if (pa !== 0) {
+                                const newCoef = pv / pa;
+                                inputCoef.value = formatNumber(newCoef);
+                                inputTaux.value = formatNumber((newCoef - 1) * 100);
+                            } else {
+                                inputCoef.value = '';
+                                inputTaux.value = '';
+                            }
+                        } else if (isCoefValid && coef !== 0) {
+                            // PV + COEF
+                            const newPa = pv / coef;
+                            inputPA.value = formatNumber(newPa);
+                            inputBen.value = formatNumber(pv - newPa);
+                            inputTaux.value = formatNumber((coef - 1) * 100);
+                        } else if (isTauxValid) {
+                            // PV + TAUX
+                            const newCoef = 1 + (taux / 100);
+                            if (newCoef !== 0) {
+                                const newPa = pv / newCoef;
+                                inputPA.value = formatNumber(newPa);
+                                inputBen.value = formatNumber(pv - newPa);
+                                inputCoef.value = formatNumber(newCoef);
+                            }
+                        } else if (isBenValid) {
+                            // PV + BEN
+                            const newPa = pv - ben;
+                            inputPA.value = formatNumber(newPa);
+                            if (newPa !== 0) {
+                                const newCoef = pv / newPa;
+                                inputCoef.value = formatNumber(newCoef);
+                                inputTaux.value = formatNumber((newCoef - 1) * 100);
+                            } else {
+                                inputCoef.value = '';
+                                inputTaux.value = '';
+                            }
+                        }
+                    }
+                }
+                else if (changedId === 'taux') {
+                    if (isTauxValid) {
+                        if (isPaValid) {
+                            const newCoef = 1 + (taux / 100);
+                            const newPv = pa * newCoef;
+                            inputPV.value = formatNumber(newPv);
+                            inputBen.value = formatNumber(newPv - pa);
+                            inputCoef.value = formatNumber(newCoef);
+                        } else if (isPvValid) {
+                            const newCoef = 1 + (taux / 100);
+                            if (newCoef !== 0) {
+                                const newPa = pv / newCoef;
+                                inputPA.value = formatNumber(newPa);
+                                inputBen.value = formatNumber(pv - newPa);
+                                inputCoef.value = formatNumber(newCoef);
+                            }
+                        } else if (isBenValid) {
+                            // BEN + TAUX → PA = BEN / (taux/100) ; PV = PA + BEN
+                            if (taux !== 0) {
+                                const newPa = ben / (taux / 100);
+                                inputPA.value = formatNumber(newPa);
+                                const newPv = newPa + ben;
+                                inputPV.value = formatNumber(newPv);
+                                inputCoef.value = formatNumber(1 + taux/100);
+                            } else {
+                                // taux = 0 -> bénéfice = 0, impossible de déterminer PA/PV
+                                // on laisse vide
+                            }
+                        }
+                    }
+                }
+                else if (changedId === 'coef') {
+                    if (isCoefValid && coef !== 0) {
+                        if (isPaValid) {
+                            const newPv = pa * coef;
+                            inputPV.value = formatNumber(newPv);
+                            inputBen.value = formatNumber(newPv - pa);
+                            inputTaux.value = formatNumber((coef - 1) * 100);
+                        } else if (isPvValid) {
+                            const newPa = pv / coef;
+                            inputPA.value = formatNumber(newPa);
+                            inputBen.value = formatNumber(pv - newPa);
+                            inputTaux.value = formatNumber((coef - 1) * 100);
+                        } else if (isBenValid && coef !== 1) {
+                            // BEN + COEF → PA = BEN/(coef-1) ; PV = PA*coef
+                            const newPa = ben / (coef - 1);
+                            inputPA.value = formatNumber(newPa);
+                            const newPv = newPa * coef;
+                            inputPV.value = formatNumber(newPv);
+                            inputTaux.value = formatNumber((coef - 1) * 100);
+                        }
+                    }
+                }
+                else if (changedId === 'benefice') {
+                    if (isBenValid) {
+                        if (isPaValid) {
+                            const newPv = pa + ben;
+                            inputPV.value = formatNumber(newPv);
+                            if (pa !== 0) {
+                                const newCoef = newPv / pa;
+                                inputCoef.value = formatNumber(newCoef);
+                                inputTaux.value = formatNumber((newCoef - 1) * 100);
+                            } else {
+                                inputCoef.value = '';
+                                inputTaux.value = '';
+                            }
+                        } else if (isPvValid) {
+                            const newPa = pv - ben;
+                            inputPA.value = formatNumber(newPa);
+                            if (newPa !== 0) {
+                                const newCoef = pv / newPa;
+                                inputCoef.value = formatNumber(newCoef);
+                                inputTaux.value = formatNumber((newCoef - 1) * 100);
+                            } else {
+                                inputCoef.value = '';
+                                inputTaux.value = '';
+                            }
+                        } else if (isTauxValid && taux !== 0) {
+                            // BEN + TAUX
+                            const newPa = ben / (taux / 100);
+                            inputPA.value = formatNumber(newPa);
+                            const newPv = newPa + ben;
+                            inputPV.value = formatNumber(newPv);
+                            inputCoef.value = formatNumber(1 + taux/100);
+                        } else if (isCoefValid && coef !== 1) {
+                            // BEN + COEF
+                            const newPa = ben / (coef - 1);
+                            inputPA.value = formatNumber(newPa);
+                            const newPv = newPa * coef;
+                            inputPV.value = formatNumber(newPv);
+                            inputTaux.value = formatNumber((coef - 1) * 100);
+                        }
+                    }
+                }
+
+                // Après tout calcul, on met à jour l'UI du bénéfice et on sauvegarde
+                const finalBen = parseFloat(inputBen.value);
+                updateBeneficeUI(finalBen);
+                saveToStorage();
+
+            } catch (error) {
+                console.warn("Erreur calcul", error);
+            } finally {
+                updating = false;
+            }
+        }
+
+        // --- Attache des événements input ---
+        inputPA.addEventListener('input', () => updateFromField('prixAchat'));
+        inputTaux.addEventListener('input', () => updateFromField('taux'));
+        inputCoef.addEventListener('input', () => updateFromField('coef'));
+        inputPV.addEventListener('input', () => updateFromField('prixVente'));
+        inputBen.addEventListener('input', () => updateFromField('benefice'));
+
+        // --- Bouton Calculer : force un recalcul basé sur le champ le plus pertinent (on prend PA si dispo, sinon PV) ---
+        document.getElementById('calculerBtn').addEventListener('click', function() {
+            if (updating) return;
+            // Pour "calculer", on déclenche une mise à jour en partant du champ prix d'achat s'il est rempli, sinon prix vente
+            if (inputPA.value.trim() !== '') {
+                updateFromField('prixAchat');
+            } else if (inputPV.value.trim() !== '') {
+                updateFromField('prixVente');
+            } else if (inputTaux.value.trim() !== '') {
+                updateFromField('taux');
+            } else if (inputCoef.value.trim() !== '') {
+                updateFromField('coef');
+            } else if (inputBen.value.trim() !== '') {
+                updateFromField('benefice');
+            } else {
+                // rien du tout
+                updateBeneficeUI(NaN);
+                saveToStorage();
+            }
+        });
+
+        // --- Remise à zéro ---
+        document.getElementById('resetBtn').addEventListener('click', function() {
+            if (updating) return;
+            updating = true;
+            inputPA.value = '';
+            inputTaux.value = '';
+            inputCoef.value = '';
+            inputPV.value = '';
+            inputBen.value = '';
+            updateBeneficeUI(NaN);
+            saveToStorage();
+            updating = false;
+        });
+
+        // --- Chargement initial depuis localStorage ---
+        loadFromStorage();
+        // déclencher une mise à jour de l'UI bénéfice et recalcul doux pour associer valeurs
+        setTimeout(() => {
+            updateFromField('prixAchat'); // un champ par défaut, mais on utilise le premier non vide ?
+            // mieux : appeler updateBeneficeUI avec la valeur actuelle
+            const currentBen = parseFloat(inputBen.value);
+            updateBeneficeUI(currentBen);
+            saveToStorage(); // synchronisation
+        }, 10);
+    })();
+</script>
+</body>
+</html>
